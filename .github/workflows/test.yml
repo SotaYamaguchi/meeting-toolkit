@@ -30,7 +30,18 @@ jobs:
 
     - name: Display coverage
       working-directory: ./mtg
-      run: go tool cover -func=coverage.out
+      run: |
+        echo "## Coverage Report" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}')
+        echo "Total Coverage: **${COVERAGE}**" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        go tool cover -func=coverage.out >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+
+        # ログにも出力
+        go tool cover -func=coverage.out
 
   build:
     name: Build
