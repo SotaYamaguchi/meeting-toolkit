@@ -18,12 +18,22 @@ make install
 インストールすると：
 - バイナリが `~/bin/mtg` に配置されます
 - 設定ファイルが `~/.config/mtg/config.json` に配置されます
+- zsh用のタブ補完スクリプトが `~/.zsh/completions/_mtg` に配置されます
 - 既存の `mtg-prep`、`mtg-memo` を自動的に削除します
 
 **注意**: `~/bin` がPATHに含まれていることを確認してください。
 
 ```bash
 export PATH="$HOME/bin:$PATH"
+```
+
+**タブ補完を有効にする (zsh)**:
+
+`~/.zshrc` に以下を追加してシェルを再起動してください：
+
+```bash
+fpath=(~/.zsh/completions $fpath)
+autoload -Uz compinit && compinit
 ```
 
 ## 使い方

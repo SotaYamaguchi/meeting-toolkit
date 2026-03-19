@@ -10,16 +10,22 @@
 
 ## インストール
 
-### ワンライナーインストール
+### 推奨: 自動セットアップ
 
 ```bash
 ./install.sh
 ```
 
-または
+インストールスクリプトが以下を実行します：
+1. バイナリを `~/bin/mtg` に配置
+2. 設定ファイルを `~/.config/mtg/config.json` に配置
+3. タブ補完スクリプトを `~/.zsh/completions/_mtg` に配置
+4. **自動セットアップ（オプション）**: `~/.zshrc` にPATHとタブ補完の設定を追加
+
+自動セットアップを選択した場合、シェルを再起動するだけで使えます：
 
 ```bash
-make install
+exec zsh
 ```
 
 ### 手動インストール
@@ -29,20 +35,20 @@ cd mtg
 make install
 ```
 
-インストールすると：
-- バイナリが `~/bin/mtg` に配置されます
-- 設定ファイルが `~/.config/mtg/config.json` に配置されます
-
-**重要**: インストール後、以下を `~/.zshrc` または `~/.bashrc` に追加してください。
+手動インストールの場合、以下を `~/.zshrc` に追加してシェルを再起動してください：
 
 ```bash
 export PATH="$HOME/bin:$PATH"
+
+# タブ補完を有効化
+fpath=(~/.zsh/completions $fpath)
+autoload -Uz compinit && compinit
 ```
 
-そして設定を反映：
+設定を反映：
 
 ```bash
-source ~/.zshrc  # または source ~/.bashrc
+source ~/.zshrc
 ```
 
 ## 使い方

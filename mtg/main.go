@@ -40,6 +40,11 @@ func main() {
 		}
 	case "help", "-h", "--help":
 		printUsage()
+	case "completion":
+		if err := runCompletion(os.Args[2:]); err != nil {
+			fmt.Fprintf(os.Stderr, "エラー: %v\n", err)
+			os.Exit(1)
+		}
 	default:
 		fmt.Fprintf(os.Stderr, "エラー: 不明なサブコマンド '%s'\n\n", subcommand)
 		printUsage()
@@ -54,6 +59,7 @@ func printUsage() {
 	fmt.Println("  mtg prep [オプション]    MTG前の送付資料を準備")
 	fmt.Println("  mtg memo [オプション]    MTG後の議事メモを整理")
 	fmt.Println("  mtg list                 利用可能なプロジェクト一覧を表示")
+	fmt.Println("  mtg completion           タブ補完スクリプトを出力")
 	fmt.Println()
 	fmt.Println("オプション:")
 	fmt.Println("  -project <名前>    プロジェクト名 (例: project-a, project-b)")
@@ -65,6 +71,12 @@ func printUsage() {
 	fmt.Println("  mtg list")
 	fmt.Println("  mtg prep -project your-project")
 	fmt.Println("  mtg memo -project your-project")
+	fmt.Println()
+	fmt.Println("タブ補完のセットアップ (zsh):")
+	fmt.Println("  mtg completion > ~/.zsh/completions/_mtg")
+	fmt.Println("  # ~/.zshrc に以下を追加:")
+	fmt.Println("  # fpath=(~/.zsh/completions $fpath)")
+	fmt.Println("  # autoload -Uz compinit && compinit")
 }
 
 func runList() error {
@@ -80,6 +92,74 @@ func runList() error {
 	}
 	return nil
 }
+
+func runCompletion(args []string) error {
+	shell := "zsh"
+	if len(args) > 0 {
+		shell = args[0]
+	}
+
+	switch shell {
+	case "zsh":
+		fmt.Print(zshCompletionScript)
+	case "bash":
+		return fmt.Errorf("bash補完は未実装です")
+	default:
+		return fmt.Errorf("未対応のシェル: %s (zsh のみ対応)", shell)
+	}
+
+	return nil
+}
+
+const zshCompletionScript = `#compdef mtg
+
+_mtg() {
+  local -a subcommands
+  subcommands=(
+    'prep:MTG前の送付資料を準備'
+    'memo:MTG後の議事メモを整理'
+    'list:利用可能なプロジェクト一覧を表示'
+    'completion:タブ補完スクリプトを出力'
+    'help:ヘルプを表示'
+  )
+
+  local -a options
+  options=(
+    '-project[プロジェクト名を指定]:project:_mtg_projects'
+    '-prefix[プレフィックスを直接指定]:prefix:'
+    '-dir[対象ディレクトリを指定]:directory:_files -/'
+    '-config[設定ファイルのパスを指定]:config file:_files'
+  )
+
+  _arguments -C \
+    '1: :->subcommand' \
+    '*:: :->args'
+
+  case $state in
+    subcommand)
+      _describe 'subcommand' subcommands
+      ;;
+    args)
+      case $words[1] in
+        prep|memo)
+          _arguments $options
+          ;;
+      esac
+      ;;
+  esac
+}
+
+_mtg_projects() {
+  local config_path="$HOME/.config/mtg/config.json"
+  if [[ -f "$config_path" ]]; then
+    local -a projects
+    projects=(${(f)"$(grep -o '"[^"]*":' "$config_path" | tr -d '":' | grep -v projects)"})
+    _describe 'project' projects
+  fi
+}
+
+_mtg "$@"
+`
 
 func runPrep(args []string) error {
 	fs := flag.NewFlagSet("prep", flag.ExitOnError)
