@@ -1,4 +1,4 @@
-version: 2
+version: "2"
 
 run:
   timeout: 5m
@@ -17,15 +17,15 @@ linters:
     - gocyclo
     - revive
 
-linters-settings:
+lintersSettings:
   gocyclo:
-    min-complexity: 15
+    minComplexity: 15
   revive:
     rules:
       - name: exported
         disabled: true
 
 issues:
-  exclude-use-default: false
-  max-issues-per-linter: 0
-  max-same-issues: 0
+  excludeUseDefault: false
+  maxIssuesPerLinter: 0
+  maxSameIssues: 0
