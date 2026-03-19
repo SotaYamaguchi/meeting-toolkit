@@ -1,5 +1,7 @@
 # docpack - 顧客プロジェクトMTG支援ツール
 
+[![Test](https://github.com/SotaYamaguchi/docpack/actions/workflows/test.yml/badge.svg)](https://github.com/SotaYamaguchi/docpack/actions/workflows/test.yml)
+
 顧客プロジェクトの定例MTG前後で使用するファイル整理ツールです。
 
 ## 特徴
@@ -179,11 +181,18 @@ mtg memo -project project-a
 cd mtg
 make build
 
+# ユニットテスト実行
+go test -v
+
+# カバレッジ付きテスト
+go test -v -race -coverprofile=coverage.out
+go tool cover -html=coverage.out
+
 # 設定ファイルを作成（開発用）
 cp config.sample.json config.json
 vim config.json  # プロジェクト情報を編集
 
-# テスト実行
+# 動作確認
 ./mtg list
 ./mtg prep -project your-project
 ./mtg memo -project your-project
