@@ -1,0 +1,7 @@
+{
+  "projects": {
+    "project-a": "PREFIX_A",
+    "project-b": "PREFIX_B",
+    "project-c": "PREFIX_C"
+  }
+}

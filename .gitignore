@@ -1,0 +1,34 @@
+# Binaries
+mtg-prep
+mtg-memo
+mtg/mtg
+
+# Build artifacts
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test binary
+*.test
+
+# Coverage
+*.out
+
+# Configuration (contains customer info)
+mtg/config.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Generated folders
+*_資料送付_*/
+*.zip
