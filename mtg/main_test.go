@@ -603,42 +603,65 @@ Subject: テスト件名
 }
 
 func TestFormatMailOutput(t *testing.T) {
-	template := &MailTemplate{
-		To:      []string{"customer@example.com", "another@example.com"},
-		Cc:      []string{"team@example.com"},
-		Bcc:     []string{"bcc@example.com"},
-		Subject: "テスト件名",
-		Body:    "テスト本文\n複数行あります",
+	tests := []struct {
+		name     string
+		template *MailTemplate
+		want     string
+	}{
+		{
+			name: "全フィールド指定",
+			template: &MailTemplate{
+				To:      []string{"customer@example.com", "another@example.com"},
+				Cc:      []string{"team@example.com"},
+				Bcc:     []string{"bcc@example.com"},
+				Subject: "テスト件名",
+				Body:    "テスト本文\n複数行あります",
+			},
+			want: "To: customer@example.com, another@example.com\n" +
+				"Cc: team@example.com\n" +
+				"Bcc: bcc@example.com\n" +
+				"件名: テスト件名\n" +
+				"\n" +
+				"テスト本文\n" +
+				"複数行あります\n",
+		},
+		{
+			name: "To空でCc/Bccなし",
+			template: &MailTemplate{
+				To:      []string{},
+				Cc:      []string{},
+				Bcc:     []string{},
+				Subject: "件名のみ",
+				Body:    "本文",
+			},
+			// To:は必須フィールドとして常に出力、Cc/Bccは空なら出力しない
+			want: "To: \n" +
+				"件名: 件名のみ\n" +
+				"\n" +
+				"本文\n",
+		},
+		{
+			name: "件名空",
+			template: &MailTemplate{
+				To:      []string{"to@example.com"},
+				Cc:      []string{},
+				Bcc:     []string{},
+				Subject: "",
+				Body:    "本文のみ",
+			},
+			want: "To: to@example.com\n" +
+				"件名: \n" +
+				"\n" +
+				"本文のみ\n",
+		},
 	}
 
-	output := formatMailOutput(template)
-
-	expectedLines := []string{
-		"To: customer@example.com, another@example.com",
-		"Cc: team@example.com",
-		"Bcc: bcc@example.com",
-		"件名: テスト件名",
-		"",
-		"テスト本文",
-		"複数行あります",
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := formatMailOutput(tt.template)
+			if got != tt.want {
+				t.Errorf("formatMailOutput() = %q, want %q", got, tt.want)
+			}
+		})
 	}
-
-	for _, expected := range expectedLines {
-		if !contains(output, expected) {
-			t.Errorf("Output should contain: %q", expected)
-		}
-	}
-}
-
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && containsSubstring(s, substr))
-}
-
-func containsSubstring(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }
