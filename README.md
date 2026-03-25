@@ -27,9 +27,15 @@ mtg prep -project your-project
 
 # MTG後の議事メモ整理
 mtg memo -project your-project
+
+# メールテンプレート表示
+mtg mail -project your-project -type prep  # MTG前送付メール
+mtg mail -project your-project -type memo  # MTG後送付メール
 ```
 
 ## 初期設定
+
+### プロジェクト設定
 
 `~/.config/mtg/config.json` を編集してプロジェクトを追加：
 
@@ -38,13 +44,34 @@ mtg memo -project your-project
   "projects": {
     "project-a": "PREFIX_A",
     "project-b": "PREFIX_B"
+  },
+  "mail_templates": {
+    "project-a": {
+      "prep": "templates/project-a-prep.txt",
+      "memo": "templates/project-a-memo.txt"
+    }
   }
 }
 ```
 
-```bash
-vim ~/.config/mtg/config.json
+### メールテンプレート設定
+
+`~/.config/mtg/templates/` にテンプレートファイルを作成：
+
 ```
+To: customer@example.com, another@example.com
+Cc: team@example.com
+Subject: 【プロジェクトA】MTG資料送付
+
+お世話になっております。
+
+本日のMTG資料を送付いたします。
+ご確認のほど、よろしくお願いいたします。
+```
+
+- メーラーからのコピペがそのまま使える
+- 改行や箇条書きもそのまま保持される
+- To/Cc/Bccはカンマ区切りで複数指定可能
 
 ## 詳細
 

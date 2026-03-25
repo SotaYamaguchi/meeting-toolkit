@@ -3,5 +3,14 @@
     "project-a": "PREFIX_A",
     "project-b": "PREFIX_B",
     "project-c": "PREFIX_C"
+  },
+  "mail_templates": {
+    "project-a": {
+      "prep": "templates/project-a-prep.txt",
+      "memo": "templates/project-a-memo.txt"
+    },
+    "project-b": {
+      "prep": "templates/project-b-prep.txt"
+    }
   }
 }
