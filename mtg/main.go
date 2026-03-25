@@ -182,7 +182,6 @@ _mtg_projects() {
   local config_path="$HOME/.config/mtg/config.json"
   if [[ -f "$config_path" ]]; then
     local -a projects
-    # projectsフィールドのキーのみを抽出（mail_templates、prep、memoなどは除外）
     projects=(${(f)"$(grep -o '"[^"]*":' "$config_path" | tr -d '":' | grep -v -E '(projects|mail_templates|prep|memo)')"})
     _describe 'project' projects
   fi
@@ -404,9 +403,6 @@ func getMailTemplate(configPath, project, mailType string) (*MailTemplate, error
 		return nil, fmt.Errorf("設定ファイル読み込みエラー: %w", err)
 	}
 
-	// MailTemplatesはmap[string]map[string]stringなので、
-	// 存在しないキーにアクセスするとnil mapが返る。
-	// okチェックでnilを含む「存在しない」ケースを検出できる。
 	projectTemplates, ok := config.MailTemplates[project]
 	if !ok {
 		return nil, fmt.Errorf("プロジェクト '%s' のメールテンプレートが見つかりません", project)
@@ -417,7 +413,6 @@ func getMailTemplate(configPath, project, mailType string) (*MailTemplate, error
 		return nil, fmt.Errorf("プロジェクト '%s' の %s テンプレートが見つかりません", project, mailType)
 	}
 
-	// 相対パスの場合、config.jsonのディレクトリからの相対パスとして解決
 	if !filepath.IsAbs(templatePath) {
 		configDir := filepath.Dir(configPath)
 		templatePath = filepath.Join(configDir, templatePath)
@@ -443,13 +438,11 @@ func parseMailTemplate(content string) (*MailTemplate, error) {
 	bodyStart := -1
 
 	for i, line := range lines {
-		// 空行が見つかったらそこから本文開始
 		if strings.TrimSpace(line) == "" {
 			bodyStart = i + 1
 			break
 		}
 
-		// ヘッダー行をパース
 		if addresses, found := strings.CutPrefix(line, "To:"); found {
 			template.To = parseEmailAddresses(addresses)
 		} else if addresses, found := strings.CutPrefix(line, "Cc:"); found {
@@ -461,7 +454,6 @@ func parseMailTemplate(content string) (*MailTemplate, error) {
 		}
 	}
 
-	// 本文を結合
 	if bodyStart >= 0 && bodyStart < len(lines) {
 		template.Body = strings.Join(lines[bodyStart:], "\n")
 	}
@@ -488,33 +480,28 @@ func parseEmailAddresses(addressLine string) []string {
 func formatMailOutput(template *MailTemplate) string {
 	var output strings.Builder
 
-	// To: 必須フィールドとして常に出力
 	output.WriteString("To: ")
 	if len(template.To) > 0 {
 		output.WriteString(strings.Join(template.To, ", "))
 	}
 	output.WriteString("\n")
 
-	// Cc: 任意フィールド（空の場合は出力しない）
 	if len(template.Cc) > 0 {
 		output.WriteString("Cc: ")
 		output.WriteString(strings.Join(template.Cc, ", "))
 		output.WriteString("\n")
 	}
 
-	// Bcc: 任意フィールド（空の場合は出力しない）
 	if len(template.Bcc) > 0 {
 		output.WriteString("Bcc: ")
 		output.WriteString(strings.Join(template.Bcc, ", "))
 		output.WriteString("\n")
 	}
 
-	// Subject: 常に出力（空でも）
 	output.WriteString("件名: ")
 	output.WriteString(template.Subject)
 	output.WriteString("\n")
 
-	// Body
 	output.WriteString("\n")
 	output.WriteString(template.Body)
 	output.WriteString("\n")
