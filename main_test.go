@@ -7,6 +7,10 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/syamaguc/meeting-toolkit/pkg/config"
+	"github.com/syamaguc/meeting-toolkit/pkg/file"
+	"github.com/syamaguc/meeting-toolkit/pkg/mail"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -54,17 +58,17 @@ func TestLoadConfig(t *testing.T) {
 			}
 
 			// テスト実行
-			config, err := loadConfig(tmpfile.Name())
+			config, err := config.Load(tmpfile.Name())
 
 			if tt.wantErr {
 				if err == nil {
-					t.Errorf("loadConfig() error = nil, wantErr %v", tt.wantErr)
+					t.Errorf("config.Load() error = nil, wantErr %v", tt.wantErr)
 				}
 				return
 			}
 
 			if err != nil {
-				t.Errorf("loadConfig() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("config.Load() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
@@ -83,9 +87,9 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestLoadConfig_FileNotFound(t *testing.T) {
-	_, err := loadConfig("/nonexistent/path/config.json")
+	_, err := config.Load("/nonexistent/path/config.json")
 	if err == nil {
-		t.Error("loadConfig() error = nil, want error for non-existent file")
+		t.Error("Load() error = nil, want error for non-existent file")
 	}
 }
 
@@ -157,22 +161,22 @@ func TestResolvePrefix(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := resolvePrefix(tt.project, tt.prefix, tt.configPath)
+			got, err := config.ResolvePrefix(tt.project, tt.prefix, tt.configPath)
 
 			if tt.wantErr {
 				if err == nil {
-					t.Errorf("resolvePrefix() error = nil, wantErr %v", tt.wantErr)
+					t.Errorf("config.ResolvePrefix() error = nil, wantErr %v", tt.wantErr)
 				}
 				return
 			}
 
 			if err != nil {
-				t.Errorf("resolvePrefix() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("config.ResolvePrefix() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
 			if got != tt.want {
-				t.Errorf("resolvePrefix() = %v, want %v", got, tt.want)
+				t.Errorf("config.ResolvePrefix() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -202,9 +206,9 @@ func TestRenameFiles(t *testing.T) {
 
 	// テスト実行
 	currentDate := "20260320"
-	err = renameFiles("PREFIX", tmpDir, currentDate, "")
+	err = file.Rename("PREFIX", tmpDir, currentDate, "")
 	if err != nil {
-		t.Errorf("renameFiles() error = %v", err)
+		t.Errorf("Rename() error = %v", err)
 		return
 	}
 
@@ -256,9 +260,9 @@ func TestRenameFilesWithSuffix(t *testing.T) {
 	// テスト実行
 	currentDate := "20260320"
 	suffix := "_MTG後"
-	err = renameFiles("PREFIX", tmpDir, currentDate, suffix)
+	err = file.Rename("PREFIX", tmpDir, currentDate, suffix)
 	if err != nil {
-		t.Errorf("renameFiles() error = %v", err)
+		t.Errorf("Rename() error = %v", err)
 		return
 	}
 
@@ -293,9 +297,9 @@ func TestCollectFiles(t *testing.T) {
 
 	// テスト実行
 	destFolder := filepath.Join(tmpDir, "PREFIX_資料送付_20260320")
-	err = collectFiles("PREFIX", tmpDir, destFolder)
+	err = file.Collect("PREFIX", tmpDir, destFolder)
 	if err != nil {
-		t.Errorf("collectFiles() error = %v", err)
+		t.Errorf("Collect() error = %v", err)
 		return
 	}
 
@@ -356,17 +360,17 @@ func TestLoadConfigWithMailTemplates(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	config, err := loadConfig(tmpfile.Name())
+	cfg, err := config.Load(tmpfile.Name())
 	if err != nil {
-		t.Fatalf("loadConfig() error = %v", err)
+		t.Fatalf("Load() error = %v", err)
 	}
 
-	if config.MailTemplates == nil {
+	if cfg.MailTemplates == nil {
 		t.Error("MailTemplates should not be nil")
 		return
 	}
 
-	projectTemplate, ok := config.MailTemplates["test-project"]
+	projectTemplate, ok := cfg.MailTemplates["test-project"]
 	if !ok {
 		t.Error("test-project template not found")
 		return
@@ -467,17 +471,17 @@ Subject: 件名
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			template, err := parseMailTemplate(tt.content)
+			template, err := mail.Parse(tt.content)
 
 			if tt.wantErr {
 				if err == nil {
-					t.Error("parseMailTemplate() error = nil, wantErr true")
+					t.Error("mail.Parse() error = nil, wantErr true")
 				}
 				return
 			}
 
 			if err != nil {
-				t.Errorf("parseMailTemplate() error = %v, wantErr false", err)
+				t.Errorf("mail.Parse() error = %v, wantErr false", err)
 				return
 			}
 
@@ -542,9 +546,9 @@ Subject: 資料送付 {{DATE}}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			template, err := parseMailTemplate(tt.content)
+			template, err := mail.Parse(tt.content)
 			if err != nil {
-				t.Errorf("parseMailTemplate() error = %v", err)
+				t.Errorf("Parse() error = %v", err)
 				return
 			}
 
@@ -641,7 +645,7 @@ Subject: テスト件名
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			template, err := getMailTemplate(tmpfile.Name(), tt.project, tt.mailType)
+			template, err := mail.Get(tmpfile.Name(), tt.project, tt.mailType)
 
 			if tt.wantErr {
 				if err == nil {
@@ -665,12 +669,12 @@ Subject: テスト件名
 func TestFormatMailOutput(t *testing.T) {
 	tests := []struct {
 		name     string
-		template *MailTemplate
+		template *mail.Template
 		want     string
 	}{
 		{
 			name: "全フィールド指定",
-			template: &MailTemplate{
+			template: &mail.Template{
 				To:      []string{"customer@example.com", "another@example.com"},
 				Cc:      []string{"team@example.com"},
 				Bcc:     []string{"bcc@example.com"},
@@ -687,7 +691,7 @@ func TestFormatMailOutput(t *testing.T) {
 		},
 		{
 			name: "To空でCc/Bccなし",
-			template: &MailTemplate{
+			template: &mail.Template{
 				To:      []string{},
 				Cc:      []string{},
 				Bcc:     []string{},
@@ -702,7 +706,7 @@ func TestFormatMailOutput(t *testing.T) {
 		},
 		{
 			name: "件名空",
-			template: &MailTemplate{
+			template: &mail.Template{
 				To:      []string{"to@example.com"},
 				Cc:      []string{},
 				Bcc:     []string{},
@@ -718,9 +722,9 @@ func TestFormatMailOutput(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := formatMailOutput(tt.template)
+			got := mail.Format(tt.template)
 			if got != tt.want {
-				t.Errorf("formatMailOutput() = %q, want %q", got, tt.want)
+				t.Errorf("Format() = %q, want %q", got, tt.want)
 			}
 		})
 	}
@@ -758,7 +762,7 @@ func TestCreateTemplateFile(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			templatePath, existed, err := createTemplateFile(tmpDir, tt.project, tt.mailType)
+			templatePath, existed, err := mail.CreateFile(tmpDir, tt.project, tt.mailType)
 
 			if tt.wantErr {
 				if err == nil {
@@ -820,9 +824,9 @@ func TestCreateTemplateFileExisting(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	templatePath, existed, err := createTemplateFile(tmpDir, "test-project", "prep")
+	templatePath, existed, err := mail.CreateFile(tmpDir, "test-project", "prep")
 	if err != nil {
-		t.Errorf("createTemplateFile() should not error when file exists, got: %v", err)
+		t.Errorf("CreateFile() should not error when file exists, got: %v", err)
 		return
 	}
 
@@ -858,7 +862,7 @@ func TestUpdateConfigWithMailTemplate(t *testing.T) {
 		mailType       string
 		templatePath   string
 		wantErr        bool
-		checkFunc      func(*testing.T, *Config)
+		checkFunc      func(*testing.T, *config.Config)
 	}{
 		{
 			name: "新規プロジェクトの追加",
@@ -872,11 +876,11 @@ func TestUpdateConfigWithMailTemplate(t *testing.T) {
 			mailType:     "prep",
 			templatePath: "templates/new-project-prep.txt",
 			wantErr:      false,
-			checkFunc: func(t *testing.T, config *Config) {
-				if _, ok := config.MailTemplates["new-project"]; !ok {
+			checkFunc: func(t *testing.T, cfg *config.Config) {
+				if _, ok := cfg.MailTemplates["new-project"]; !ok {
 					t.Error("new-project not added to mail_templates")
 				}
-				if path := config.MailTemplates["new-project"]["prep"]; path != "templates/new-project-prep.txt" {
+				if path := cfg.MailTemplates["new-project"]["prep"]; path != "templates/new-project-prep.txt" {
 					t.Errorf("prep path = %v, want templates/new-project-prep.txt", path)
 				}
 			},
@@ -897,8 +901,8 @@ func TestUpdateConfigWithMailTemplate(t *testing.T) {
 			mailType:     "memo",
 			templatePath: "templates/existing-memo.txt",
 			wantErr:      false,
-			checkFunc: func(t *testing.T, config *Config) {
-				templates := config.MailTemplates["existing-project"]
+			checkFunc: func(t *testing.T, cfg *config.Config) {
+				templates := cfg.MailTemplates["existing-project"]
 				if templates["prep"] != "templates/existing-prep.txt" {
 					t.Error("Existing prep template should be preserved")
 				}
@@ -916,7 +920,7 @@ func TestUpdateConfigWithMailTemplate(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			err := updateConfigWithMailTemplate(configPath, tt.project, tt.mailType, tt.templatePath)
+			err := mail.UpdateConfig(configPath, tt.project, tt.mailType, tt.templatePath)
 
 			if tt.wantErr {
 				if err == nil {
@@ -930,13 +934,13 @@ func TestUpdateConfigWithMailTemplate(t *testing.T) {
 				return
 			}
 
-			config, err := loadConfig(configPath)
+			cfg, err := config.Load(configPath)
 			if err != nil {
 				t.Fatalf("Failed to load updated config: %v", err)
 			}
 
 			if tt.checkFunc != nil {
-				tt.checkFunc(t, config)
+				tt.checkFunc(t, cfg)
 			}
 		})
 	}

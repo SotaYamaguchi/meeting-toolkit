@@ -28,7 +28,6 @@ jobs:
       uses: golangci/golangci-lint-action@v7
       with:
         version: v2.11
-        working-directory: ./mtg
 
   test:
     name: Test
@@ -45,11 +44,9 @@ jobs:
         cache: false
 
     - name: Run tests
-      working-directory: ./mtg
       run: go test -v -race -coverprofile=coverage.out ./...
 
     - name: Display coverage
-      working-directory: ./mtg
       run: |
         echo "## Coverage Report" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
@@ -78,9 +75,7 @@ jobs:
         cache: false
 
     - name: Build binary
-      working-directory: ./mtg
       run: go build -v -o mtg
 
     - name: Verify binary
-      working-directory: ./mtg
       run: ./mtg help

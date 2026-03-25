@@ -8,11 +8,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Development Commands
 
-All commands are run from the `mtg/` directory:
+All commands are run from the repository root:
 
 ```bash
-cd mtg
-
 # Build
 make build          # Creates ./mtg binary
 
@@ -32,35 +30,61 @@ make uninstall      # Remove binary and config
 
 ## Architecture
 
-### Single-File CLI (`main.go`)
+### Package Structure (Red Hat style)
 
-All functionality is in `mtg/main.go` (~340 lines). No modules or packages.
+Code is organized following Red Hat upstream project patterns (e.g., StackRox, OpenShift CLI):
+
+```
+.
+├── main.go              # Entry point only (~40 lines)
+├── cmd/                 # Subcommand implementations
+│   ├── root.go         # Usage and common utilities
+│   ├── prep.go         # prep subcommand
+│   ├── memo.go         # memo subcommand
+│   ├── mail.go         # mail subcommand
+│   ├── list.go         # list subcommand
+│   └── completion.go   # completion subcommand
+└── pkg/                # Reusable business logic
+    ├── config/         # Configuration management
+    │   └── config.go   # Load, Save, ResolvePrefix
+    ├── file/           # File operations
+    │   └── operations.go  # Rename, Collect, ProcessPrep/Memo
+    └── mail/           # Mail template handling
+        └── template.go # Get, Parse, Format, CreateFile
+```
 
 **Subcommands:**
 - `prep` - Rename files (main→date) and collect for pre-meeting
 - `memo` - Rename files (main→date_MTG後) and collect for post-meeting
+- `mail` - Display mail template for project
+- `mail init` - Create mail template file
 - `list` - Show configured projects from config.json
 - `completion` - Generate zsh completion script
 
 **Core flow:**
-1. Parse subcommand and flags (`-project`, `-prefix`, `-dir`)
-2. Resolve prefix from project name via `~/.config/mtg/config.json`
-3. Execute file operations:
-   - `renameFiles()` - Replace "main" in filenames with current date (YYYYMMDD format)
-   - `collectFiles()` - Move files matching prefix pattern to destination folder
+1. `main.go` dispatches to appropriate `cmd.Run*()` function
+2. Command parses flags and calls `pkg/config.ResolvePrefix()`
+3. Execute operations via `pkg/file.*()` or `pkg/mail.*()`
+
+**Key packages:**
+- `pkg/config` - Config struct, Load/Save, prefix resolution
+- `pkg/file` - Rename/Collect files, ProcessPrep/ProcessMemo
+- `pkg/mail` - Template parsing, formatting, file creation
 
 **Configuration:**
 - User config: `~/.config/mtg/config.json` (maps project names to file prefixes)
-- Sample: `mtg/config.sample.json` (committed to repo)
+- Sample: `config.sample.json` (committed to repo)
 - **Important:** Actual `config.json` contains customer information and is `.gitignore`d
 
 ### Testing Strategy
 
 Tests in `main_test.go` use temporary directories and files:
-- `loadConfig` - JSON parsing and validation
-- `resolvePrefix` - Project name to prefix resolution
-- `renameFiles` - File renaming with date/suffix
-- `collectFiles` - File moving to destination folder
+- `config.Load` - JSON parsing and validation
+- `config.ResolvePrefix` - Project name to prefix resolution
+- `file.Rename` - File renaming with date/suffix
+- `file.Collect` - File moving to destination folder
+- `mail.Parse` - Email template parsing
+- `mail.Format` - Email output formatting
 
 Test files must handle cleanup with `defer func() { _ = os.RemoveAll(tmpDir) }()` pattern to satisfy errcheck linter.
 

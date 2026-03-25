@@ -4,8 +4,8 @@ set -e
 echo "mtg - 顧客プロジェクトMTG支援ツールをインストールします"
 echo ""
 
-# mtgディレクトリに移動してインストール
-cd "$(dirname "$0")/mtg"
+# プロジェクトルートでインストール
+cd "$(dirname "$0")"
 make install
 
 echo ""

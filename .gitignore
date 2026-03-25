@@ -1,7 +1,7 @@
 # Binaries
 mtg-prep
 mtg-memo
-mtg/mtg
+mtg
 
 # Build artifacts
 *.exe
@@ -16,7 +16,7 @@ mtg/mtg
 *.out
 
 # Configuration (contains customer info)
-mtg/config.json
+config.json
 
 # IDE
 .vscode/
