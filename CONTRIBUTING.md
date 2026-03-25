@@ -93,15 +93,28 @@ vim config.json  # プロジェクト情報を編集
 
 GitHub Actionsで以下を自動実行：
 
-1. **Lint**: golangci-lintでコード品質チェック
-2. **Test**: ユニットテスト + カバレッジレポート
-3. **Build**: バイナリのビルド確認
+- **Lint**: golangci-lintでコード品質チェック（main/PR）
+- **Test**: ユニットテスト + カバレッジレポート（main/PR）
+- **Build**: バイナリのビルド確認（main/PR）
 
-## リリース手順
+実行タイミング：
+- `main`ブランチへのpush時
+- Pull Request作成・更新時
 
-1. バージョンタグを作成
-2. GitHub Actionsが自動でビルド・テスト
-3. リリースノートを作成
+## 配布方法
+
+現在はソースコードからのビルドのみ対応：
+
+```bash
+git clone https://github.com/SotaYamaguchi/meeting-toolkit.git
+cd meeting-toolkit
+./install.sh
+```
+
+将来的な改善案：
+- [ ] リリース自動化（GitHub Actions）
+- [ ] バイナリの自動ビルド・配布
+- [ ] Homebrewでのインストール対応
 
 ## コーディング規約
 
