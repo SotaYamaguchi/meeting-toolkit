@@ -11,3 +11,17 @@ linters:
     - staticcheck
     - unused
     - misspell
+    - revive        # GoDocコメント、コーディングスタイルチェック
+    - godoclint     # GoDocコメントのベストプラクティスチェック
+
+linters-settings:
+  revive:
+    rules:
+      # 公開関数/型にコメント必須
+      - name: exported
+        severity: error
+        disabled: false
+      # パッケージコメント必須
+      - name: package-comments
+        severity: error
+        disabled: false
