@@ -1,0 +1,8 @@
+To: customer-a@example.com
+Cc: team@example.com
+Subject:
+
+お世話になっております。
+
+本日のMTG議事録を送付いたします。
+ご確認のほど、よろしくお願いいたします。

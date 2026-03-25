@@ -336,20 +336,7 @@ func TestLoadConfigWithMailTemplates(t *testing.T) {
 		},
 		"mail_templates": {
 			"test-project": {
-				"prep": {
-					"to": ["customer@example.com"],
-					"cc": ["team@example.com"],
-					"bcc": [],
-					"subject": "テスト件名",
-					"body": "テスト本文"
-				},
-				"memo": {
-					"to": ["customer@example.com"],
-					"cc": [],
-					"bcc": [],
-					"subject": "",
-					"body": "議事録本文"
-				}
+				"prep": "templates/test-prep.txt"
 			}
 		}
 	}`
@@ -383,40 +370,170 @@ func TestLoadConfigWithMailTemplates(t *testing.T) {
 		return
 	}
 
-	// prep テンプレートのチェック
-	if len(projectTemplate.Prep.To) != 1 || projectTemplate.Prep.To[0] != "customer@example.com" {
-		t.Errorf("prep.To = %v, want [customer@example.com]", projectTemplate.Prep.To)
+	// prep テンプレートパスのチェック
+	prepPath, ok := projectTemplate["prep"]
+	if !ok {
+		t.Error("prep template path not found")
+		return
 	}
-	if projectTemplate.Prep.Subject != "テスト件名" {
-		t.Errorf("prep.Subject = %v, want テスト件名", projectTemplate.Prep.Subject)
-	}
-	if projectTemplate.Prep.Body != "テスト本文" {
-		t.Errorf("prep.Body = %v, want テスト本文", projectTemplate.Prep.Body)
-	}
-
-	// memo テンプレートのチェック
-	if projectTemplate.Memo.Subject != "" {
-		t.Errorf("memo.Subject = %v, want empty string", projectTemplate.Memo.Subject)
-	}
-	if projectTemplate.Memo.Body != "議事録本文" {
-		t.Errorf("memo.Body = %v, want 議事録本文", projectTemplate.Memo.Body)
+	if prepPath != "templates/test-prep.txt" {
+		t.Errorf("prep = %v, want templates/test-prep.txt", prepPath)
 	}
 }
 
+func TestParseMailTemplate(t *testing.T) {
+	tests := []struct {
+		name        string
+		content     string
+		wantTo      []string
+		wantCc      []string
+		wantBcc     []string
+		wantSubject string
+		wantBody    string
+		wantErr     bool
+	}{
+		{
+			name: "基本的なテンプレート",
+			content: `To: customer@example.com
+Cc: team@example.com
+Subject: テスト件名
+
+テスト本文
+複数行あります`,
+			wantTo:      []string{"customer@example.com"},
+			wantCc:      []string{"team@example.com"},
+			wantBcc:     []string{},
+			wantSubject: "テスト件名",
+			wantBody:    "テスト本文\n複数行あります",
+			wantErr:     false,
+		},
+		{
+			name: "複数のTo/Cc/Bcc",
+			content: `To: customer1@example.com, customer2@example.com
+Cc: team1@example.com, team2@example.com
+Bcc: archive@example.com
+Subject: テスト件名
+
+本文`,
+			wantTo:      []string{"customer1@example.com", "customer2@example.com"},
+			wantCc:      []string{"team1@example.com", "team2@example.com"},
+			wantBcc:     []string{"archive@example.com"},
+			wantSubject: "テスト件名",
+			wantBody:    "本文",
+			wantErr:     false,
+		},
+		{
+			name: "件名が空",
+			content: `To: customer@example.com
+Subject:
+
+本文`,
+			wantTo:      []string{"customer@example.com"},
+			wantCc:      []string{},
+			wantBcc:     []string{},
+			wantSubject: "",
+			wantBody:    "本文",
+			wantErr:     false,
+		},
+		{
+			name: "CcとBccなし",
+			content: `To: customer@example.com
+Subject: 件名
+
+本文`,
+			wantTo:      []string{"customer@example.com"},
+			wantCc:      []string{},
+			wantBcc:     []string{},
+			wantSubject: "件名",
+			wantBody:    "本文",
+			wantErr:     false,
+		},
+		{
+			name: "スペース含むアドレス",
+			content: `To: customer1@example.com , customer2@example.com
+Subject: 件名
+
+本文`,
+			wantTo:      []string{"customer1@example.com", "customer2@example.com"},
+			wantCc:      []string{},
+			wantBcc:     []string{},
+			wantSubject: "件名",
+			wantBody:    "本文",
+			wantErr:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			template, err := parseMailTemplate(tt.content)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Error("parseMailTemplate() error = nil, wantErr true")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("parseMailTemplate() error = %v, wantErr false", err)
+				return
+			}
+
+			if !stringSliceEqual(template.To, tt.wantTo) {
+				t.Errorf("To = %v, want %v", template.To, tt.wantTo)
+			}
+			if !stringSliceEqual(template.Cc, tt.wantCc) {
+				t.Errorf("Cc = %v, want %v", template.Cc, tt.wantCc)
+			}
+			if !stringSliceEqual(template.Bcc, tt.wantBcc) {
+				t.Errorf("Bcc = %v, want %v", template.Bcc, tt.wantBcc)
+			}
+			if template.Subject != tt.wantSubject {
+				t.Errorf("Subject = %v, want %v", template.Subject, tt.wantSubject)
+			}
+			if template.Body != tt.wantBody {
+				t.Errorf("Body = %v, want %v", template.Body, tt.wantBody)
+			}
+		})
+	}
+}
+
+func stringSliceEqual(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
 func TestGetMailTemplate(t *testing.T) {
+	// テンプレートファイルを作成
+	tmpDir, err := os.MkdirTemp("", "mtg-test-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.RemoveAll(tmpDir) }()
+
+	templateContent := `To: customer@example.com
+Subject: テスト件名
+
+テスト本文`
+	templatePath := filepath.Join(tmpDir, "test-prep.txt")
+	if err := os.WriteFile(templatePath, []byte(templateContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
 	configJSON := `{
 		"projects": {
 			"test-project": "TEST_PREFIX"
 		},
 		"mail_templates": {
 			"test-project": {
-				"prep": {
-					"to": ["customer@example.com"],
-					"cc": [],
-					"bcc": [],
-					"subject": "テスト件名",
-					"body": "テスト本文"
-				}
+				"prep": "` + templatePath + `"
 			}
 		}
 	}`

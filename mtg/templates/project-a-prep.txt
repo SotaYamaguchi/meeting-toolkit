@@ -1,0 +1,8 @@
+To: customer-a@example.com
+Cc: team@example.com
+Subject: 【プロジェクトA】MTG資料送付
+
+お世話になっております。
+
+本日のMTG資料を送付いたします。
+ご確認のほど、よろしくお願いいたします。

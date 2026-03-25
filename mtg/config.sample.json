@@ -6,36 +6,11 @@
   },
   "mail_templates": {
     "project-a": {
-      "prep": {
-        "to": ["customer-a@example.com"],
-        "cc": ["team@example.com"],
-        "bcc": [],
-        "subject": "【プロジェクトA】MTG資料送付",
-        "body": "お世話になっております。\n\n本日のMTG資料を送付いたします。\nご確認のほど、よろしくお願いいたします。"
-      },
-      "memo": {
-        "to": ["customer-a@example.com"],
-        "cc": ["team@example.com"],
-        "bcc": [],
-        "subject": "",
-        "body": "お世話になっております。\n\n本日のMTG議事録を送付いたします。\nご確認のほど、よろしくお願いいたします。"
-      }
+      "prep": "templates/project-a-prep.txt",
+      "memo": "templates/project-a-memo.txt"
     },
     "project-b": {
-      "prep": {
-        "to": ["customer-b@example.com"],
-        "cc": [],
-        "bcc": [],
-        "subject": "【プロジェクトB】資料送付のご連絡",
-        "body": "いつもお世話になっております。\n\nMTG資料をお送りいたします。"
-      },
-      "memo": {
-        "to": ["customer-b@example.com"],
-        "cc": [],
-        "bcc": [],
-        "subject": "",
-        "body": "いつもお世話になっております。\n\n議事録をお送りいたします。"
-      }
+      "prep": "templates/project-b-prep.txt"
     }
   }
 }

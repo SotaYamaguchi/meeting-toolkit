@@ -12,13 +12,8 @@ import (
 )
 
 type Config struct {
-	Projects      map[string]string                `json:"projects"`
-	MailTemplates map[string]*ProjectMailTemplates `json:"mail_templates"`
-}
-
-type ProjectMailTemplates struct {
-	Prep *MailTemplate `json:"prep"`
-	Memo *MailTemplate `json:"memo"`
+	Projects      map[string]string                     `json:"projects"`
+	MailTemplates map[string]map[string]string          `json:"mail_templates"`
 }
 
 type MailTemplate struct {
@@ -413,21 +408,77 @@ func getMailTemplate(configPath, project, mailType string) (*MailTemplate, error
 		return nil, fmt.Errorf("プロジェクト '%s' のメールテンプレートが見つかりません", project)
 	}
 
-	var template *MailTemplate
-	switch mailType {
-	case "prep":
-		template = projectTemplates.Prep
-	case "memo":
-		template = projectTemplates.Memo
-	default:
-		return nil, fmt.Errorf("不正なメールタイプ: %s (prep または memo を指定してください)", mailType)
-	}
-
-	if template == nil {
+	templatePath, ok := projectTemplates[mailType]
+	if !ok {
 		return nil, fmt.Errorf("プロジェクト '%s' の %s テンプレートが見つかりません", project, mailType)
 	}
 
+	// 相対パスの場合、config.jsonのディレクトリからの相対パスとして解決
+	if !filepath.IsAbs(templatePath) {
+		configDir := filepath.Dir(configPath)
+		templatePath = filepath.Join(configDir, templatePath)
+	}
+
+	// テンプレートファイルを読み込み
+	content, err := os.ReadFile(templatePath)
+	if err != nil {
+		return nil, fmt.Errorf("テンプレートファイル読み込みエラー (%s): %w", templatePath, err)
+	}
+
+	return parseMailTemplate(string(content))
+}
+
+func parseMailTemplate(content string) (*MailTemplate, error) {
+	template := &MailTemplate{
+		To:  []string{},
+		Cc:  []string{},
+		Bcc: []string{},
+	}
+
+	lines := strings.Split(content, "\n")
+	bodyStart := -1
+
+	for i, line := range lines {
+		// 空行が見つかったらそこから本文開始
+		if strings.TrimSpace(line) == "" {
+			bodyStart = i + 1
+			break
+		}
+
+		// ヘッダー行をパース
+		if addresses, found := strings.CutPrefix(line, "To:"); found {
+			template.To = parseEmailAddresses(addresses)
+		} else if addresses, found := strings.CutPrefix(line, "Cc:"); found {
+			template.Cc = parseEmailAddresses(addresses)
+		} else if addresses, found := strings.CutPrefix(line, "Bcc:"); found {
+			template.Bcc = parseEmailAddresses(addresses)
+		} else if subject, found := strings.CutPrefix(line, "Subject:"); found {
+			template.Subject = strings.TrimSpace(subject)
+		}
+	}
+
+	// 本文を結合
+	if bodyStart >= 0 && bodyStart < len(lines) {
+		template.Body = strings.Join(lines[bodyStart:], "\n")
+	}
+
 	return template, nil
+}
+
+func parseEmailAddresses(addressLine string) []string {
+	if strings.TrimSpace(addressLine) == "" {
+		return []string{}
+	}
+
+	addresses := strings.Split(addressLine, ",")
+	result := make([]string, 0, len(addresses))
+	for _, addr := range addresses {
+		trimmed := strings.TrimSpace(addr)
+		if trimmed != "" {
+			result = append(result, trimmed)
+		}
+	}
+	return result
 }
 
 func formatMailOutput(template *MailTemplate) string {

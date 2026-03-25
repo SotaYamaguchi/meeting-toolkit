@@ -1,0 +1,8 @@
+To: customer-b1@example.com, customer-b2@example.com
+Cc: team1@example.com, team2@example.com
+Bcc: archive@example.com
+Subject: 【プロジェクトB】資料送付のご連絡
+
+いつもお世話になっております。
+
+MTG資料をお送りいたします。
