@@ -61,17 +61,23 @@ mtg mail -project your-project -type memo  # MTG後送付メール
 ```
 To: customer@example.com, another@example.com
 Cc: team@example.com
-Subject: 【プロジェクトA】MTG資料送付
+Subject: 【プロジェクトA】MTG資料送付 {{DATE}}
 
 お世話になっております。
 
 本日のMTG資料を送付いたします。
+
+送付資料：
+- 資料_{{DATE}}.pdf
+
 ご確認のほど、よろしくお願いいたします。
 ```
 
+**特徴：**
 - メーラーからのコピペがそのまま使える
 - 改行や箇条書きもそのまま保持される
 - To/Cc/Bccはカンマ区切りで複数指定可能
+- `{{DATE}}` は実行日の日付（YYYYMMDD形式）に自動置換
 
 ## 詳細
 

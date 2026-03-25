@@ -71,11 +71,12 @@ func printUsage() {
 	fmt.Println("mtg - 顧客プロジェクトのMTG前後でファイルを整理するツール")
 	fmt.Println()
 	fmt.Println("使い方:")
-	fmt.Println("  mtg prep [オプション]    MTG前の送付資料を準備")
-	fmt.Println("  mtg memo [オプション]    MTG後の議事メモを整理")
-	fmt.Println("  mtg mail [オプション]    メールテンプレートを表示")
-	fmt.Println("  mtg list                 利用可能なプロジェクト一覧を表示")
-	fmt.Println("  mtg completion           タブ補完スクリプトを出力")
+	fmt.Println("  mtg prep [オプション]         MTG前の送付資料を準備")
+	fmt.Println("  mtg memo [オプション]         MTG後の議事メモを整理")
+	fmt.Println("  mtg mail [オプション]         メールテンプレートを表示")
+	fmt.Println("  mtg mail init [オプション]    メールテンプレートを作成")
+	fmt.Println("  mtg list                      利用可能なプロジェクト一覧を表示")
+	fmt.Println("  mtg completion                タブ補完スクリプトを出力")
 	fmt.Println()
 	fmt.Println("オプション:")
 	fmt.Println("  -project <名前>    プロジェクト名 (例: project-a, project-b)")
@@ -89,6 +90,7 @@ func printUsage() {
 	fmt.Println("  mtg prep -project your-project")
 	fmt.Println("  mtg memo -project your-project")
 	fmt.Println("  mtg mail -project your-project -type prep")
+	fmt.Println("  mtg mail init -project your-project -type prep")
 	fmt.Println()
 	fmt.Println("タブ補完のセットアップ (zsh):")
 	fmt.Println("  mtg completion > ~/.zsh/completions/_mtg")
@@ -229,6 +231,10 @@ func runMemo(args []string) error {
 }
 
 func runMail(args []string) error {
+	if len(args) > 0 && args[0] == "init" {
+		return runMailInit(args[1:])
+	}
+
 	fs := flag.NewFlagSet("mail", flag.ExitOnError)
 	project := fs.String("project", "", "プロジェクト名")
 	mailType := fs.String("type", "", "メールタイプ (prep または memo)")
@@ -253,6 +259,59 @@ func runMail(args []string) error {
 
 	output := formatMailOutput(template)
 	fmt.Print(output)
+
+	return nil
+}
+
+func runMailInit(args []string) error {
+	fs := flag.NewFlagSet("mail init", flag.ExitOnError)
+	project := fs.String("project", "", "プロジェクト名")
+	mailType := fs.String("type", "", "メールタイプ (prep または memo)")
+	configPath := fs.String("config", getDefaultConfigPath(), "設定ファイルのパス")
+
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+
+	if *project == "" {
+		return fmt.Errorf("-project フラグが必要です")
+	}
+
+	if *mailType == "" {
+		return fmt.Errorf("-type フラグが必要です (prep または memo)")
+	}
+
+	if *mailType != "prep" && *mailType != "memo" {
+		return fmt.Errorf("不正なメールタイプ: %s (prep または memo を指定してください)", *mailType)
+	}
+
+	configDir := filepath.Dir(*configPath)
+	templatesDir := filepath.Join(configDir, "templates")
+
+	if err := os.MkdirAll(templatesDir, 0755); err != nil {
+		return fmt.Errorf("テンプレートディレクトリ作成エラー: %w", err)
+	}
+
+	templatePath, existed, err := createTemplateFile(templatesDir, *project, *mailType)
+	if err != nil {
+		return err
+	}
+
+	relPath := "templates/" + filepath.Base(templatePath)
+
+	if err := updateConfigWithMailTemplate(*configPath, *project, *mailType, relPath); err != nil {
+		return err
+	}
+
+	if existed {
+		fmt.Printf("⚠️  テンプレートファイルは既に存在します: %s\n", templatePath)
+		fmt.Printf("✓ 既存のファイルを使用します\n")
+	} else {
+		fmt.Printf("✓ テンプレートファイルを作成しました: %s\n", templatePath)
+	}
+	fmt.Printf("✓ config.jsonを更新しました\n")
+	fmt.Printf("\nテンプレートを編集してください:\n")
+	fmt.Printf("  vim %s\n", templatePath)
 
 	return nil
 }
@@ -434,6 +493,8 @@ func parseMailTemplate(content string) (*MailTemplate, error) {
 		Bcc: []string{},
 	}
 
+	currentDate := time.Now().Format("20060102")
+
 	lines := strings.Split(content, "\n")
 	bodyStart := -1
 
@@ -457,6 +518,9 @@ func parseMailTemplate(content string) (*MailTemplate, error) {
 	if bodyStart >= 0 && bodyStart < len(lines) {
 		template.Body = strings.Join(lines[bodyStart:], "\n")
 	}
+
+	template.Subject = strings.ReplaceAll(template.Subject, "{{DATE}}", currentDate)
+	template.Body = strings.ReplaceAll(template.Body, "{{DATE}}", currentDate)
 
 	return template, nil
 }
@@ -507,4 +571,65 @@ func formatMailOutput(template *MailTemplate) string {
 	output.WriteString("\n")
 
 	return output.String()
+}
+
+func createTemplateFile(templatesDir, project, mailType string) (string, bool, error) {
+	filename := fmt.Sprintf("%s-%s.txt", project, mailType)
+	templatePath := filepath.Join(templatesDir, filename)
+
+	if _, err := os.Stat(templatePath); err == nil {
+		return templatePath, true, nil
+	}
+
+	defaultTemplate := `To:
+Cc:
+Subject:
+
+メール本文をここに記入してください。
+
+`
+
+	if err := os.WriteFile(templatePath, []byte(defaultTemplate), 0644); err != nil {
+		return "", false, fmt.Errorf("テンプレートファイル作成エラー: %w", err)
+	}
+
+	return templatePath, false, nil
+}
+
+func updateConfigWithMailTemplate(configPath, project, mailType, templatePath string) error {
+	var config *Config
+
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		config = &Config{
+			Projects:      make(map[string]string),
+			MailTemplates: make(map[string]map[string]string),
+		}
+	} else {
+		var err error
+		config, err = loadConfig(configPath)
+		if err != nil {
+			return fmt.Errorf("設定ファイル読み込みエラー: %w", err)
+		}
+	}
+
+	if config.MailTemplates == nil {
+		config.MailTemplates = make(map[string]map[string]string)
+	}
+
+	if config.MailTemplates[project] == nil {
+		config.MailTemplates[project] = make(map[string]string)
+	}
+
+	config.MailTemplates[project][mailType] = templatePath
+
+	data, err := json.MarshalIndent(config, "", "  ")
+	if err != nil {
+		return fmt.Errorf("JSON変換エラー: %w", err)
+	}
+
+	if err := os.WriteFile(configPath, data, 0644); err != nil {
+		return fmt.Errorf("設定ファイル書き込みエラー: %w", err)
+	}
+
+	return nil
 }
