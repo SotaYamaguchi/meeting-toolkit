@@ -36,14 +36,14 @@ Code is organized following Red Hat upstream project patterns (e.g., StackRox, O
 
 ```
 .
-├── main.go              # Entry point only (~40 lines)
-├── cmd/                 # Subcommand implementations
-│   ├── root.go         # Usage and common utilities
+├── main.go              # Entry point (cmd.Execute() only)
+├── cmd/                 # Cobra subcommand definitions
+│   ├── root.go         # Root command and subcommand registration
 │   ├── prep.go         # prep subcommand
 │   ├── memo.go         # memo subcommand
-│   ├── mail.go         # mail subcommand
+│   ├── mail.go         # mail / mail init subcommands
 │   ├── list.go         # list subcommand
-│   └── completion.go   # completion subcommand
+│   └── completion.go   # completion subcommand (cobra auto-generated)
 └── pkg/                # Reusable business logic
     ├── config/         # Configuration management
     │   └── config.go   # Load, Save, ResolvePrefix
@@ -59,12 +59,12 @@ Code is organized following Red Hat upstream project patterns (e.g., StackRox, O
 - `mail` - Display mail template for project
 - `mail init` - Create mail template file
 - `list` - Show configured projects from config.json
-- `completion` - Generate zsh completion script
+- `completion` - Generate shell completion script (bash/zsh/fish/powershell)
 
 **Core flow:**
-1. `main.go` dispatches to appropriate `cmd.Run*()` function
-2. Command parses flags and calls `pkg/config.ResolvePrefix()`
-3. Execute operations via `pkg/file.*()` or `pkg/mail.*()`
+1. `main.go` calls `cmd.Execute()` which runs the cobra root command
+2. Cobra dispatches to the appropriate subcommand's `RunE` function
+3. Subcommand resolves prefix via `pkg/config.ResolvePrefix()` and executes operations via `pkg/file.*()` or `pkg/mail.*()`
 
 **Key packages:**
 - `pkg/config` - Config struct, Load/Save, prefix resolution
@@ -105,7 +105,7 @@ Setup: `pre-commit install`
 
 ## Key Constraints
 
-- **No external dependencies** - Uses only Go standard library
+- **Minimal dependencies** - Uses cobra for CLI framework, otherwise Go standard library
 - **Stateless** - No database, all config from JSON file
 - **File-based** - Operates on filesystem directly using glob patterns
 - **Date format** - Always YYYYMMDD (time.Now().Format("20060102"))

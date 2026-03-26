@@ -44,7 +44,7 @@ install: build
 	@echo ""
 	@echo "タブ補完をインストール中..."
 	@mkdir -p $(ZSH_COMPLETION_DIR)
-	@$(INSTALL_DIR)/$(BINARY_NAME) completion > $(ZSH_COMPLETION_FILE) 2>/dev/null || true
+	@$(INSTALL_DIR)/$(BINARY_NAME) completion zsh > $(ZSH_COMPLETION_FILE) 2>/dev/null || true
 	@if [ -f $(ZSH_COMPLETION_FILE) ]; then \
 		echo "zsh補完スクリプトを $(ZSH_COMPLETION_FILE) にインストールしました"; \
 		echo ""; \
