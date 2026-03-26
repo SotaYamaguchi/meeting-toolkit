@@ -13,106 +13,111 @@ import (
 
 var mailCmd = &cobra.Command{
 	Use:   "mail",
-	Short: "メールテンプレートを表示",
-	Args:  cobra.NoArgs,
-	ValidArgsFunction: func(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
-		return nil, cobra.ShellCompDirectiveNoFileComp
-	},
-	RunE: func(cmd *cobra.Command, _ []string) error {
-		project, _ := cmd.Flags().GetString("project")
-		mailType, _ := cmd.Flags().GetString("type")
-		configPath, _ := cmd.Flags().GetString("config")
+	Short: "メールテンプレートを表示・管理",
+}
 
-		if project == "" {
-			return fmt.Errorf("-project フラグが必要です")
-		}
+func newMailShowCmd(mailType string) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   mailType,
+		Short: fmt.Sprintf("%s用メールテンプレートを表示", mailType),
+		Args:  cobra.NoArgs,
+		ValidArgsFunction: func(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
+			return nil, cobra.ShellCompDirectiveNoFileComp
+		},
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			project, _ := cmd.Flags().GetString("project")
+			configPath, _ := cmd.Flags().GetString("config")
 
-		if mailType == "" {
-			return fmt.Errorf("-type フラグが必要です (prep または memo)")
-		}
+			if project == "" {
+				return fmt.Errorf("--project フラグが必要です")
+			}
 
-		template, err := mail.Get(configPath, project, mailType)
-		if err != nil {
-			return err
-		}
+			template, err := mail.Get(configPath, project, mailType)
+			if err != nil {
+				return err
+			}
 
-		output := mail.Format(template)
-		fmt.Print(output)
+			output := mail.Format(template)
+			fmt.Print(output)
 
-		return nil
-	},
+			return nil
+		},
+	}
+
+	cmd.Flags().StringP("project", "p", "", "プロジェクト名")
+	cmd.Flags().StringP("config", "c", config.GetDefaultPath(), "設定ファイルのパス")
+
+	_ = cmd.RegisterFlagCompletionFunc("project", completeProjects)
+
+	return cmd
 }
 
 var mailInitCmd = &cobra.Command{
 	Use:   "init",
 	Short: "メールテンプレートファイルを作成",
-	Args:  cobra.NoArgs,
-	ValidArgsFunction: func(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
-		return nil, cobra.ShellCompDirectiveNoFileComp
-	},
-	RunE: func(cmd *cobra.Command, _ []string) error {
-		project, _ := cmd.Flags().GetString("project")
-		mailType, _ := cmd.Flags().GetString("type")
-		configPath, _ := cmd.Flags().GetString("config")
+}
 
-		if project == "" {
-			return fmt.Errorf("-project フラグが必要です")
-		}
+func newMailInitTypeCmd(mailType string) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   mailType,
+		Short: fmt.Sprintf("%s用メールテンプレートを作成", mailType),
+		Args:  cobra.NoArgs,
+		ValidArgsFunction: func(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
+			return nil, cobra.ShellCompDirectiveNoFileComp
+		},
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			project, _ := cmd.Flags().GetString("project")
+			configPath, _ := cmd.Flags().GetString("config")
 
-		if mailType == "" {
-			return fmt.Errorf("-type フラグが必要です (prep または memo)")
-		}
+			if project == "" {
+				return fmt.Errorf("--project フラグが必要です")
+			}
 
-		if mailType != "prep" && mailType != "memo" {
-			return fmt.Errorf("不正なメールタイプ: %s (prep または memo を指定してください)", mailType)
-		}
+			configDir := filepath.Dir(configPath)
+			templatesDir := filepath.Join(configDir, "templates")
 
-		configDir := filepath.Dir(configPath)
-		templatesDir := filepath.Join(configDir, "templates")
+			if err := os.MkdirAll(templatesDir, 0755); err != nil {
+				return fmt.Errorf("テンプレートディレクトリ作成エラー: %w", err)
+			}
 
-		if err := os.MkdirAll(templatesDir, 0755); err != nil {
-			return fmt.Errorf("テンプレートディレクトリ作成エラー: %w", err)
-		}
+			templatePath, existed, err := mail.CreateFile(templatesDir, project, mailType)
+			if err != nil {
+				return err
+			}
 
-		templatePath, existed, err := mail.CreateFile(templatesDir, project, mailType)
-		if err != nil {
-			return err
-		}
+			relPath := "templates/" + filepath.Base(templatePath)
 
-		relPath := "templates/" + filepath.Base(templatePath)
+			if err := mail.UpdateConfig(configPath, project, mailType, relPath); err != nil {
+				return err
+			}
 
-		if err := mail.UpdateConfig(configPath, project, mailType, relPath); err != nil {
-			return err
-		}
+			if existed {
+				fmt.Printf("⚠️  テンプレートファイルは既に存在します: %s\n", templatePath)
+				fmt.Printf("✓ 既存のファイルを使用します\n")
+			} else {
+				fmt.Printf("✓ テンプレートファイルを作成しました: %s\n", templatePath)
+			}
+			fmt.Printf("✓ config.jsonを更新しました\n")
+			fmt.Printf("\nテンプレートを編集してください:\n")
+			fmt.Printf("  vim %s\n", templatePath)
 
-		if existed {
-			fmt.Printf("⚠️  テンプレートファイルは既に存在します: %s\n", templatePath)
-			fmt.Printf("✓ 既存のファイルを使用します\n")
-		} else {
-			fmt.Printf("✓ テンプレートファイルを作成しました: %s\n", templatePath)
-		}
-		fmt.Printf("✓ config.jsonを更新しました\n")
-		fmt.Printf("\nテンプレートを編集してください:\n")
-		fmt.Printf("  vim %s\n", templatePath)
+			return nil
+		},
+	}
 
-		return nil
-	},
+	cmd.Flags().StringP("project", "p", "", "プロジェクト名")
+	cmd.Flags().StringP("config", "c", config.GetDefaultPath(), "設定ファイルのパス")
+
+	_ = cmd.RegisterFlagCompletionFunc("project", completeProjects)
+
+	return cmd
 }
 
 func init() {
-	mailCmd.Flags().StringP("project", "p", "", "プロジェクト名")
-	mailCmd.Flags().StringP("type", "t", "", "メールタイプ (prep または memo)")
-	mailCmd.Flags().StringP("config", "c", config.GetDefaultPath(), "設定ファイルのパス")
+	mailInitCmd.AddCommand(newMailInitTypeCmd("prep"))
+	mailInitCmd.AddCommand(newMailInitTypeCmd("memo"))
 
-	_ = mailCmd.RegisterFlagCompletionFunc("project", completeProjects)
-	_ = mailCmd.RegisterFlagCompletionFunc("type", completeMailType)
-
-	mailInitCmd.Flags().StringP("project", "p", "", "プロジェクト名")
-	mailInitCmd.Flags().StringP("type", "t", "", "メールタイプ (prep または memo)")
-	mailInitCmd.Flags().StringP("config", "c", config.GetDefaultPath(), "設定ファイルのパス")
-
-	_ = mailInitCmd.RegisterFlagCompletionFunc("project", completeProjects)
-	_ = mailInitCmd.RegisterFlagCompletionFunc("type", completeMailType)
-
+	mailCmd.AddCommand(newMailShowCmd("prep"))
+	mailCmd.AddCommand(newMailShowCmd("memo"))
 	mailCmd.AddCommand(mailInitCmd)
 }

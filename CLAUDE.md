@@ -56,8 +56,8 @@ Code is organized following Red Hat upstream project patterns (e.g., StackRox, O
 **Subcommands:**
 - `prep` - Rename files (main→date) and collect for pre-meeting
 - `memo` - Rename files (main→date_MTG後) and collect for post-meeting
-- `mail` - Display mail template for project
-- `mail init` - Create mail template file
+- `mail prep` / `mail memo` - Display mail template for project
+- `mail init prep` / `mail init memo` - Create mail template file
 - `list` - Show configured projects from config.json
 - `completion` - Generate shell completion script (bash/zsh/fish/powershell)
 
