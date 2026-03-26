@@ -44,6 +44,11 @@ _mtg() {
     '-config[設定ファイルのパスを指定]:config file:_files'
   )
 
+  local -a mail_subcommands
+  mail_subcommands=(
+    'init:メールテンプレートファイルを作成'
+  )
+
   local -a mail_options
   mail_options=(
     '-project[プロジェクト名を指定]:project:_mtg_projects'
@@ -65,7 +70,22 @@ _mtg() {
           _arguments $options
           ;;
         mail)
-          _arguments $mail_options
+          _arguments -C \
+            '1: :->mail_subcommand' \
+            '*:: :->mail_args'
+          case $state in
+            mail_subcommand)
+              _describe 'mail subcommand' mail_subcommands
+              _arguments $mail_options
+              ;;
+            mail_args)
+              case $words[1] in
+                init)
+                  _arguments $mail_options
+                  ;;
+              esac
+              ;;
+          esac
           ;;
       esac
       ;;
