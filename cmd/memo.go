@@ -34,4 +34,6 @@ func init() {
 	memoCmd.Flags().String("prefix", "", "プレフィックスを直接指定")
 	memoCmd.Flags().StringP("dir", "d", ".", "対象ディレクトリ")
 	memoCmd.Flags().StringP("config", "c", config.GetDefaultPath(), "設定ファイルのパス")
+
+	_ = memoCmd.RegisterFlagCompletionFunc("project", completeProjects)
 }

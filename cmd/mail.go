@@ -104,9 +104,15 @@ func init() {
 	mailCmd.Flags().StringP("type", "t", "", "メールタイプ (prep または memo)")
 	mailCmd.Flags().StringP("config", "c", config.GetDefaultPath(), "設定ファイルのパス")
 
+	_ = mailCmd.RegisterFlagCompletionFunc("project", completeProjects)
+	_ = mailCmd.RegisterFlagCompletionFunc("type", completeMailType)
+
 	mailInitCmd.Flags().StringP("project", "p", "", "プロジェクト名")
 	mailInitCmd.Flags().StringP("type", "t", "", "メールタイプ (prep または memo)")
 	mailInitCmd.Flags().StringP("config", "c", config.GetDefaultPath(), "設定ファイルのパス")
+
+	_ = mailInitCmd.RegisterFlagCompletionFunc("project", completeProjects)
+	_ = mailInitCmd.RegisterFlagCompletionFunc("type", completeMailType)
 
 	mailCmd.AddCommand(mailInitCmd)
 }

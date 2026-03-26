@@ -34,4 +34,6 @@ func init() {
 	prepCmd.Flags().String("prefix", "", "プレフィックスを直接指定")
 	prepCmd.Flags().StringP("dir", "d", ".", "対象ディレクトリ")
 	prepCmd.Flags().StringP("config", "c", config.GetDefaultPath(), "設定ファイルのパス")
+
+	_ = prepCmd.RegisterFlagCompletionFunc("project", completeProjects)
 }

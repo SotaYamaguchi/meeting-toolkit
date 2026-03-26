@@ -3,6 +3,8 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
+
+	"github.com/syamaguc/meeting-toolkit/pkg/config"
 )
 
 var rootCmd = &cobra.Command{
@@ -37,4 +39,23 @@ func init() {
 	rootCmd.AddCommand(mailCmd)
 	rootCmd.AddCommand(listCmd)
 	rootCmd.AddCommand(completionCmd)
+}
+
+// completeProjects returns project names from config for flag completion.
+func completeProjects(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
+	cfg, err := config.Load(config.GetDefaultPath())
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	}
+
+	var projects []string
+	for name := range cfg.Projects {
+		projects = append(projects, name)
+	}
+	return projects, cobra.ShellCompDirectiveNoFileComp
+}
+
+// completeMailType returns mail type candidates for flag completion.
+func completeMailType(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
+	return []string{"prep", "memo"}, cobra.ShellCompDirectiveNoFileComp
 }
