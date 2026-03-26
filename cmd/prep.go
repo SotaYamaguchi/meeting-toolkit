@@ -1,28 +1,33 @@
 package cmd
 
 import (
-	"flag"
+	"github.com/spf13/cobra"
 
 	"github.com/syamaguc/meeting-toolkit/pkg/config"
 	"github.com/syamaguc/meeting-toolkit/pkg/file"
 )
 
-// RunPrep executes the prep subcommand.
-func RunPrep(args []string) error {
-	fs := flag.NewFlagSet("prep", flag.ExitOnError)
-	project := fs.String("project", "", "プロジェクト名")
-	prefix := fs.String("prefix", "", "プレフィックス")
-	dir := fs.String("dir", ".", "対象ディレクトリ")
-	configPath := fs.String("config", config.GetDefaultPath(), "設定ファイルのパス")
+var prepCmd = &cobra.Command{
+	Use:   "prep",
+	Short: "MTG前の送付資料を準備",
+	RunE: func(cmd *cobra.Command, _ []string) error {
+		project, _ := cmd.Flags().GetString("project")
+		prefix, _ := cmd.Flags().GetString("prefix")
+		dir, _ := cmd.Flags().GetString("dir")
+		configPath, _ := cmd.Flags().GetString("config")
 
-	if err := fs.Parse(args); err != nil {
-		return err
-	}
+		finalPrefix, err := config.ResolvePrefix(project, prefix, configPath)
+		if err != nil {
+			return err
+		}
 
-	finalPrefix, err := config.ResolvePrefix(*project, *prefix, *configPath)
-	if err != nil {
-		return err
-	}
+		return file.ProcessPrep(finalPrefix, dir)
+	},
+}
 
-	return file.ProcessPrep(finalPrefix, *dir)
+func init() {
+	prepCmd.Flags().StringP("project", "p", "", "プロジェクト名")
+	prepCmd.Flags().String("prefix", "", "プレフィックスを直接指定")
+	prepCmd.Flags().StringP("dir", "d", ".", "対象ディレクトリ")
+	prepCmd.Flags().StringP("config", "c", config.GetDefaultPath(), "設定ファイルのパス")
 }
