@@ -11,6 +11,10 @@ import (
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: "利用可能なプロジェクト一覧を表示",
+	Args: cobra.NoArgs,
+	ValidArgsFunction: func(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	},
 	RunE: func(_ *cobra.Command, _ []string) error {
 		cfg, err := config.Load(config.GetDefaultPath())
 		if err != nil {

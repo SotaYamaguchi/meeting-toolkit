@@ -10,6 +10,10 @@ import (
 var prepCmd = &cobra.Command{
 	Use:   "prep",
 	Short: "MTG前の送付資料を準備",
+	Args: cobra.NoArgs,
+	ValidArgsFunction: func(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
+		return nil, cobra.ShellCompDirectiveNoFileComp
+	},
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		project, _ := cmd.Flags().GetString("project")
 		prefix, _ := cmd.Flags().GetString("prefix")
@@ -30,4 +34,6 @@ func init() {
 	prepCmd.Flags().String("prefix", "", "プレフィックスを直接指定")
 	prepCmd.Flags().StringP("dir", "d", ".", "対象ディレクトリ")
 	prepCmd.Flags().StringP("config", "c", config.GetDefaultPath(), "設定ファイルのパス")
+
+	_ = prepCmd.RegisterFlagCompletionFunc("project", completeProjects)
 }
