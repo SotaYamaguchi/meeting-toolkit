@@ -39,9 +39,8 @@ Code is organized following Red Hat upstream project patterns (e.g., StackRox, O
 ├── main.go              # Entry point (cmd.Execute() only)
 ├── cmd/                 # Cobra subcommand definitions
 │   ├── root.go         # Root command and subcommand registration
-│   ├── prep.go         # prep subcommand
-│   ├── memo.go         # memo subcommand
-│   ├── mail.go         # mail / mail init subcommands
+│   ├── files.go        # files prep / files memo subcommands
+│   ├── mail.go         # mail prep / mail memo / mail init subcommands
 │   ├── list.go         # list subcommand
 │   └── completion.go   # completion subcommand (cobra auto-generated)
 └── pkg/                # Reusable business logic
@@ -54,10 +53,10 @@ Code is organized following Red Hat upstream project patterns (e.g., StackRox, O
 ```
 
 **Subcommands:**
-- `prep` - Rename files (main→date) and collect for pre-meeting
-- `memo` - Rename files (main→date_MTG後) and collect for post-meeting
-- `mail` - Display mail template for project
-- `mail init` - Create mail template file
+- `files prep` - Rename files (main→date) and collect for pre-meeting
+- `files post` - Rename files (main→date_MTG後) and collect for post-meeting
+- `mail prep` / `mail post` - Display mail template for project
+- `mail init prep` / `mail init post` - Create mail template file
 - `list` - Show configured projects from config.json
 - `completion` - Generate shell completion script (bash/zsh/fish/powershell)
 
