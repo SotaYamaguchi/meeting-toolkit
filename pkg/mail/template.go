@@ -25,26 +25,36 @@ type Template struct {
 	Body string
 }
 
-// Get retrieves a mail template for a project and mail type.
-func Get(configPath, project, mailType string) (*Template, error) {
+// ResolvePath resolves the absolute path to a mail template file for a project and mail type.
+func ResolvePath(configPath, project, mailType string) (string, error) {
 	cfg, err := config.Load(configPath)
 	if err != nil {
-		return nil, fmt.Errorf("設定ファイル読み込みエラー: %w", err)
+		return "", fmt.Errorf("設定ファイル読み込みエラー: %w", err)
 	}
 
 	projectTemplates, ok := cfg.MailTemplates[project]
 	if !ok {
-		return nil, fmt.Errorf("プロジェクト '%s' のメールテンプレートが見つかりません", project)
+		return "", fmt.Errorf("プロジェクト '%s' のメールテンプレートが見つかりません", project)
 	}
 
 	templatePath, ok := projectTemplates[mailType]
 	if !ok {
-		return nil, fmt.Errorf("プロジェクト '%s' の %s テンプレートが見つかりません", project, mailType)
+		return "", fmt.Errorf("プロジェクト '%s' の %s テンプレートが見つかりません", project, mailType)
 	}
 
 	if !filepath.IsAbs(templatePath) {
 		configDir := filepath.Dir(configPath)
 		templatePath = filepath.Join(configDir, templatePath)
+	}
+
+	return templatePath, nil
+}
+
+// Get retrieves a mail template for a project and mail type.
+func Get(configPath, project, mailType string) (*Template, error) {
+	templatePath, err := ResolvePath(configPath, project, mailType)
+	if err != nil {
+		return nil, err
 	}
 
 	content, err := os.ReadFile(templatePath)

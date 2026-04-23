@@ -19,6 +19,8 @@ var rootCmd = &cobra.Command{
   mtg mail post [オプション]         post用メールテンプレートを表示
   mtg mail init prep [オプション]    prep用メールテンプレートを作成
   mtg mail init post [オプション]    post用メールテンプレートを作成
+  mtg mail edit prep [オプション]    prep用メールテンプレートをエディタで編集
+  mtg mail edit post [オプション]    post用メールテンプレートをエディタで編集
   mtg list                           利用可能なプロジェクト一覧を表示
   mtg completion [shell]             タブ補完スクリプトを出力
 
@@ -27,7 +29,8 @@ var rootCmd = &cobra.Command{
   mtg files prep --project your-project
   mtg files post --project your-project
   mtg mail prep --project your-project
-  mtg mail init prep --project your-project`,
+  mtg mail init prep --project your-project
+  mtg mail edit prep --project your-project`,
 }
 
 // Execute runs the root command.

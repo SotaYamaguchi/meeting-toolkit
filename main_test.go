@@ -848,6 +848,122 @@ func TestCreateTemplateFileExisting(t *testing.T) {
 	}
 }
 
+func TestResolvePath(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "mtg-test-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.RemoveAll(tmpDir) }()
+
+	// テンプレートファイルを作成
+	templateContent := `To: customer@example.com
+Subject: テスト件名
+
+テスト本文`
+	templatePath := filepath.Join(tmpDir, "test-prep.txt")
+	if err := os.WriteFile(templatePath, []byte(templateContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// config.json を作成
+	configJSON := `{
+		"projects": {
+			"test-project": "TEST_PREFIX"
+		},
+		"mail_templates": {
+			"test-project": {
+				"prep": "` + templatePath + `"
+			}
+		}
+	}`
+	configPath := filepath.Join(tmpDir, "config.json")
+	if err := os.WriteFile(configPath, []byte(configJSON), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name     string
+		project  string
+		mailType string
+		wantPath string
+		wantErr  bool
+	}{
+		{
+			name:     "正常なパス解決",
+			project:  "test-project",
+			mailType: "prep",
+			wantPath: templatePath,
+			wantErr:  false,
+		},
+		{
+			name:     "存在しないプロジェクト",
+			project:  "nonexistent",
+			mailType: "prep",
+			wantErr:  true,
+		},
+		{
+			name:     "存在しないメールタイプ",
+			project:  "test-project",
+			mailType: "invalid",
+			wantErr:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := mail.ResolvePath(configPath, tt.project, tt.mailType)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Error("ResolvePath() error = nil, wantErr true")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("ResolvePath() error = %v, wantErr false", err)
+				return
+			}
+
+			if got != tt.wantPath {
+				t.Errorf("ResolvePath() = %v, want %v", got, tt.wantPath)
+			}
+		})
+	}
+}
+
+func TestResolvePathRelative(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "mtg-test-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.RemoveAll(tmpDir) }()
+
+	// config.json に相対パスを指定
+	configJSON := `{
+		"projects": {},
+		"mail_templates": {
+			"test-project": {
+				"prep": "templates/test-prep.txt"
+			}
+		}
+	}`
+	configPath := filepath.Join(tmpDir, "config.json")
+	if err := os.WriteFile(configPath, []byte(configJSON), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := mail.ResolvePath(configPath, "test-project", "prep")
+	if err != nil {
+		t.Fatalf("ResolvePath() error = %v", err)
+	}
+
+	expected := filepath.Join(tmpDir, "templates", "test-prep.txt")
+	if got != expected {
+		t.Errorf("ResolvePath() = %v, want %v", got, expected)
+	}
+}
+
 func TestUpdateConfigWithMailTemplate(t *testing.T) {
 	tmpDir, err := os.MkdirTemp("", "mtg-test-*")
 	if err != nil {
