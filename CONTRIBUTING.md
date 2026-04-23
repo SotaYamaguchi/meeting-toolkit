@@ -39,10 +39,11 @@ vim config.json  # プロジェクト情報を編集
 
 # 動作確認
 ./mtg list
-./mtg prep -project your-project
-./mtg memo -project your-project
-./mtg mail init -project your-project -type prep
-./mtg mail -project your-project -type prep
+./mtg files prep -p your-project
+./mtg files post -p your-project
+./mtg mail init prep -p your-project
+./mtg mail prep -p your-project
+./mtg mail edit prep -p your-project
 ```
 
 ## ディレクトリ構成
@@ -61,11 +62,15 @@ vim config.json  # プロジェクト情報を編集
 ├── config.sample.json           # 設定ファイルのサンプル
 ├── main.go                      # エントリーポイント
 ├── main_test.go                 # テストコード
+├── .claude/                     # Claude Code設定
+│   ├── commands/                # スラッシュコマンド
+│   ├── hooks/                   # PreToolUse hook
+│   └── settings.json            # hook設定
 ├── cmd/                         # サブコマンド実装
-│   ├── root.go                  # ヘルプ表示
-│   ├── prep.go                  # prepコマンド
-│   ├── memo.go                  # memoコマンド
-│   ├── mail.go                  # mailコマンド
+│   ├── root.go                  # ルートコマンドとヘルプ表示
+│   ├── files.go                 # files prep/postコマンド
+│   ├── mail.go                  # mail prep/post/init/editコマンド
+│   ├── mail_test.go             # mailテスト
 │   ├── list.go                  # listコマンド
 │   └── completion.go            # 補完スクリプト
 ├── pkg/                         # ビジネスロジック
